@@ -1,0 +1,16 @@
+data
+*.tar
+
+# 环境文件
+.env
+.env.local
+
+# IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统文件
+.DS_Store
+Thumbs.db

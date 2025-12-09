@@ -1,0 +1,34 @@
+services:
+  caddy:
+    image: caddy:alpine
+    container_name: caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/data:/data
+    environment:
+      - TZ=Asia/Shanghai
+    networks:
+      - www-network
+
+  netcut:
+    image: netcut-netcut:latest
+    container_name: netcut
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      - AUTH_USER=${NETCUT_USER} #在此设置账号
+      - AUTH_PASS=${NETCUT_PASS} #在此设置密码
+    volumes:
+      - ./netcut/data:/app/data
+      - ./netcut/templates:/app/templates
+    networks:
+      - www-network
+
+networks:
+  www-network:
+    driver: bridge

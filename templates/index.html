@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NetCut / {{.Key}}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js 用于 Markdown 渲染 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'media', // 跟随系统深色模式
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#151e2e', // 用于侧边栏
+                            900: '#0f172a', // 模态框背景
+                            950: '#020617', // 全局深色背景
+                        }
+                    },
+                    typography: (theme) => ({
+                        DEFAULT: {
+                            css: {
+                                color: theme('colors.slate.700'),
+                                code: {
+                                    backgroundColor: theme('colors.slate.100'),
+                                    color: theme('colors.pink.500'),
+                                    padding: '0.25rem',
+                                    borderRadius: '0.25rem',
+                                    fontWeight: '400',
+                                },
+                            },
+                        },
+                        invert: {
+                            css: {
+                                color: theme('colors.slate.300'),
+                                'h1, h2, h3, h4': { color: theme('colors.slate.100') },
+                                strong: { color: theme('colors.slate.100') },
+                                a: { color: theme('colors.indigo.400') },
+                                code: {
+                                    backgroundColor: theme('colors.slate.800'),
+                                    color: theme('colors.pink.400'),
+                                },
+                                pre: {
+                                    backgroundColor: theme('colors.slate.900'), // 代码块深色背景
+                                    border: `1px solid ${theme('colors.slate.800')}`,
+                                }
+                            },
+                        },
+                    }),
+                }
+            },
+            plugins: [
+                // 引入排版插件逻辑（CDN版手动模拟部分样式）
+            ],
+        }
+    </script>
+    <style>
+        /* 滚动条深色适配 */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        /* 字体设置 */
+        textarea, .markdown-body, pre, code {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', Consolas, monospace;
+            font-variant-ligatures: none;
+        }
+
+        /* 简单的 Markdown 样式 (配合 prose-invert) */
+        .prose { max-width: none; line-height: 1.75; }
+        .prose h1 { font-size: 2em; font-weight: 800; margin-top: 1em; margin-bottom: 0.5em; }
+        .prose h2 { font-size: 1.5em; font-weight: 700; margin-top: 1em; margin-bottom: 0.5em; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3em; }
+        .dark .prose h2 { border-color: #334155; }
+        .prose ul { list-style-type: disc; padding-left: 1.5em; margin: 1em 0; }
+        .prose ol { list-style-type: decimal; padding-left: 1.5em; margin: 1em 0; }
+        .prose blockquote { border-left: 4px solid #cbd5e1; padding-left: 1rem; font-style: italic; color: #64748b; }
+        .dark .prose blockquote { border-color: #475569; color: #94a3b8; }
+        .prose img { max-width: 100%; border-radius: 0.5rem; }
+        .prose a { color: #4f46e5; text-decoration: underline; text-underline-offset: 2px; }
+        .dark .prose a { color: #818cf8; }
+        .prose pre { padding: 1rem; overflow-x: auto; border-radius: 0.5rem; background: #f1f5f9; color: #1e293b; }
+        .dark .prose pre { background: #0f172a; color: #e2e8f0; border: 1px solid #1e293b; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-200 h-screen flex flex-col overflow-hidden transition-colors duration-200">
+
+    <!-- 顶部导航栏 -->
+    <header class="min-h-[3.5rem] shrink-0 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between px-4 py-2 gap-y-3 z-20 shadow-sm transition-all">
+        
+        <!-- Logo & Mode Badge -->
+        <div class="flex items-center gap-3 overflow-hidden mr-auto max-w-full">
+            <h1 class="font-bold text-base md:text-lg whitespace-nowrap tracking-tight flex items-center">
+                NetCut 
+                <span class="text-slate-300 dark:text-slate-600 font-light mx-1">/</span>
+                <span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded text-sm font-mono truncate border border-indigo-100 dark:border-indigo-800/50 max-w-[120px] sm:max-w-none">
+                    {{.Key}}
+                </span>
+            </h1>
+            
+            <!-- 权限指示牌 -->
+            <div class="flex items-center shrink-0">
+                {{if eq .Meta.Mode 0}}<span class="text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 px-1.5 py-0.5 rounded font-medium">Admin</span>{{end}}
+                {{if eq .Meta.Mode 1}}<span class="text-[10px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-1.5 py-0.5 rounded font-medium">Read</span>{{end}}
+                {{if eq .Meta.Mode 2}}<span class="text-[10px] bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-800 px-1.5 py-0.5 rounded font-medium">RW</span>{{end}}
+                {{if eq .Meta.Mode 3}}<span class="text-[10px] bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800 px-1.5 py-0.5 rounded font-medium">Pass R</span>{{end}}
+                {{if eq .Meta.Mode 4}}<span class="text-[10px] bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 px-1.5 py-0.5 rounded font-medium">Pass RW</span>{{end}}
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="flex items-center gap-3 shrink-0 ml-auto sm:ml-0">
+            <!-- Edit/Preview Toggle -->
+            <div class="flex bg-slate-100 dark:bg-slate-800 rounded p-1 border border-slate-200 dark:border-slate-700">
+                <button onclick="toggleView('edit')" id="btn-edit" class="px-3 py-1 text-xs font-medium rounded shadow-sm bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300">Edit</button>
+                <button onclick="toggleView('preview')" id="btn-preview" class="px-3 py-1 text-xs font-medium rounded text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition">View</button>
+            </div>
+
+            <span id="status-msg" class="text-xs font-medium text-emerald-500 opacity-0 transition-opacity hidden md:inline">Synced</span>
+            
+            <!-- Settings Icon (Admin Only) -->
+            {{if .IsAdmin}}
+            <button onclick="openSettings()" class="text-slate-400 hover:text-indigo-500 dark:text-slate-500 dark:hover:text-indigo-400 transition p-1" title="Permissions">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
+            {{end}}
+            
+            <!-- Reload -->
+            <a href="/{{.Key}}" class="text-slate-400 hover:text-indigo-500 dark:text-slate-500 dark:hover:text-indigo-400 transition p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </a>
+        </div>
+    </header>
+
+    <!-- 主布局 -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        <!-- 左侧：编辑器 -->
+        <section class="flex-1 relative flex flex-col min-h-0 bg-white dark:bg-transparent group">
+            <!-- 文本区域：深色模式下颜色更白，placeholder更灰 -->
+            <textarea id="editor" 
+                class="w-full h-full p-4 md:p-6 bg-transparent resize-none focus:outline-none text-sm md:text-base leading-relaxed text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600"
+                spellcheck="false"
+                placeholder="{{if .CanWrite}}Start typing or paste content here... (Markdown supported){{else}}Read Only Mode{{end}}" 
+                {{if not .CanWrite}}readonly{{end}}>{{.Content}}</textarea>
+            
+            <!-- 预览区域：prose 样式 -->
+            <div id="preview" class="hidden w-full h-full p-4 md:p-6 overflow-y-auto prose dark:prose-invert"></div>
+
+            <!-- Admin 登录快捷入口 -->
+            {{if not .IsAdmin}}
+                <a href="/{{.Key}}/login" class="absolute bottom-2 left-2 text-[10px] text-slate-300 hover:text-indigo-500 dark:text-slate-700 dark:hover:text-indigo-400 z-10 transition">Admin Login</a>
+            {{end}}
+        </section>
+
+        <!-- 右侧：文件列表 -->
+        <aside class="md:w-80 w-full bg-slate-50 dark:bg-slate-900 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-inner z-10 max-h-[40vh] md:max-h-none shrink-0">
+            <!-- Header -->
+            <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-100 dark:bg-slate-800/40 sticky top-0 z-10 backdrop-blur-sm">
+                <h2 class="font-bold text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">Files</h2>
+                <span class="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full font-mono">{{len .Files}}</span>
+            </div>
+
+            <!-- List -->
+            <div class="flex-1 overflow-y-auto p-2 space-y-1 min-h-[100px]" id="file-list">
+                {{if .Files}}
+                    {{range .Files}}
+                    <div class="group flex items-center justify-between p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200">
+                        <a href="/download/{{$.Key}}/{{.Name}}" download class="flex items-center gap-3 min-w-0 flex-1">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center shrink-0 text-indigo-500 dark:text-indigo-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            </div>
+                            <div class="truncate flex flex-col">
+                                <span class="text-sm font-medium text-slate-700 dark:text-slate-200 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{{.Name}}</span>
+                                <span class="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{{.Size}}</span>
+                            </div>
+                        </a>
+                        {{if $.CanWrite}}
+                        <button onclick="deleteFile('{{.Name}}')" class="p-2 text-slate-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 transition opacity-0 group-hover:opacity-100">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                        {{end}}
+                    </div>
+                    {{end}}
+                {{else}}
+                    <div class="h-32 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 text-xs gap-2">
+                        <svg class="w-8 h-8 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"></path></svg>
+                        No files yet
+                    </div>
+                {{end}}
+            </div>
+
+            <!-- Upload Area -->
+            {{if .CanWrite}}
+            <div class="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shrink-0">
+                <div class="relative">
+                    <input type="file" id="fileInput" class="hidden" onchange="uploadFile()">
+                    <label for="fileInput" class="cursor-pointer flex items-center justify-center gap-2 w-full border border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-3 text-center hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 hover:text-indigo-600 dark:hover:text-indigo-400 transition group bg-white dark:bg-slate-800">
+                        <svg class="w-4 h-4 text-slate-400 group-hover:text-inherit transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 group-hover:text-inherit transition-colors">Upload File</span>
+                    </label>
+                    <div id="progress-container" class="hidden absolute inset-0 bg-white dark:bg-slate-800 rounded-lg flex flex-col items-center justify-center z-10 border border-slate-200 dark:border-slate-700">
+                        <div class="w-3/4 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                            <div id="progress-bar" class="bg-indigo-500 h-full rounded-full transition-all duration-200" style="width:0%"></div>
+                        </div>
+                        <span class="text-[10px] mt-1 text-slate-500 dark:text-slate-400">Uploading...</span>
+                    </div>
+                </div>
+            </div>
+            {{end}}
+        </aside>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 bg-slate-800 dark:bg-indigo-600 text-white px-5 py-2.5 rounded-full shadow-2xl text-sm font-medium opacity-0 transition-all duration-300 pointer-events-none z-50 transform translate-y-[-1rem] flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span id="toast-msg">Success</span>
+    </div>
+
+    <!-- 🔐 Password Modal -->
+    {{if .ShowPass}}
+    <div class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-800">
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 dark:text-white">Protected</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">This clipboard is password protected.</p>
+            </div>
+            
+            <input type="password" id="auth-pass" class="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg px-4 py-3 mb-4 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-all" placeholder="Enter password" onkeyup="if(event.key==='Enter') submitAuth()">
+            
+            <button onclick="submitAuth()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition-colors shadow-lg shadow-indigo-500/30">Unlock</button>
+        </div>
+    </div>
+    {{end}}
+
+    <!-- ⚙️ Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-[2px] z-40 flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800 transform scale-100 transition-transform">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Settings
+                </h3>
+                <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Access Mode</label>
+                    <div class="relative">
+                        <select id="set-mode" class="w-full appearance-none border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-lg p-3 pr-10 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition-colors cursor-pointer" onchange="togglePassInput()">
+                            <option value="0">🔒 Admin Only (Default)</option>
+                            <option value="1">👀 Public Read / Admin Write</option>
+                            <option value="2">🌍 Public Read / Write</option>
+                            <option value="3">🔑 Password Read / Admin Write</option>
+                            <option value="4">🔐 Password Read / Write</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="set-pass-group" class="hidden animate-fade-in-down">
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Guest Password</label>
+                    <input type="text" id="set-pass" class="w-full border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors" placeholder="Set a strong password">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">Cancel</button>
+                <button onclick="saveSettings()" class="px-6 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md shadow-indigo-500/20 transition-all active:scale-95">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const key = "{{.Key}}";
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const canWrite = {{.CanWrite}};
+
+        // View Toggle
+        function toggleView(mode) {
+            const btnEdit = document.getElementById('btn-edit');
+            const btnView = document.getElementById('btn-preview');
+            
+            if (mode === 'preview') {
+                preview.innerHTML = marked.parse(editor.value);
+                editor.classList.add('hidden');
+                preview.classList.remove('hidden');
+                // Styles update
+                btnView.classList.replace('text-slate-500', 'bg-white');
+                btnView.classList.replace('hover:text-slate-700', 'shadow-sm');
+                btnView.classList.add('dark:bg-slate-700', 'text-indigo-600', 'dark:text-indigo-300');
+                
+                btnEdit.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600', 'dark:bg-slate-700', 'dark:text-indigo-300');
+                btnEdit.classList.add('text-slate-500', 'hover:text-slate-700', 'dark:text-slate-400', 'dark:hover:text-slate-200');
+            } else {
+                editor.classList.remove('hidden');
+                preview.classList.add('hidden');
+                // Styles update (Reverse)
+                btnEdit.classList.add('bg-white', 'shadow-sm', 'text-indigo-600', 'dark:bg-slate-700', 'dark:text-indigo-300');
+                btnEdit.classList.remove('text-slate-500', 'hover:text-slate-700', 'dark:text-slate-400', 'dark:hover:text-slate-200');
+
+                btnView.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600', 'dark:bg-slate-700', 'dark:text-indigo-300');
+                btnView.classList.add('text-slate-500', 'hover:text-slate-700', 'dark:text-slate-400', 'dark:hover:text-slate-200');
+            }
+        }
+
+        // Logic (Same as before)
+        let saveTimer;
+        if(canWrite) {
+            editor.addEventListener('input', () => {
+                document.getElementById('status-msg').classList.remove('opacity-0');
+                clearTimeout(saveTimer);
+                saveTimer = setTimeout(async () => {
+                    try {
+                        await fetch(`/${key}/text`, { method: 'POST', body: editor.value });
+                        document.getElementById('status-msg').classList.add('opacity-0');
+                    } catch(e) {}
+                }, 1000);
+            });
+            
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    clearTimeout(saveTimer);
+                    fetch(`/${key}/text`, { method: 'POST', body: editor.value })
+                        .then(()=>showToast('Content Saved'));
+                }
+            });
+        }
+
+        async function submitAuth() {
+            const pass = document.getElementById('auth-pass').value;
+            const res = await fetch(`/${key}/auth`, {
+                method: 'POST', body: JSON.stringify({password: pass})
+            });
+            const data = await res.json();
+            if(data.success) location.reload();
+            else {
+                const inp = document.getElementById('auth-pass');
+                inp.classList.add('border-red-500', 'ring-2', 'ring-red-500');
+                inp.value = '';
+                inp.placeholder = 'Wrong Password!';
+            }
+        }
+
+        function openSettings() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+            const currentMode = {{.Meta.Mode}};
+            document.getElementById('set-mode').value = currentMode;
+            document.getElementById('set-pass').value = "{{.Meta.KeyPassword}}";
+            togglePassInput();
+        }
+
+        function togglePassInput() {
+            const val = parseInt(document.getElementById('set-mode').value);
+            const grp = document.getElementById('set-pass-group');
+            if(val === 3 || val === 4) grp.classList.remove('hidden');
+            else grp.classList.add('hidden');
+        }
+
+        async function saveSettings() {
+            const mode = parseInt(document.getElementById('set-mode').value);
+            const password = document.getElementById('set-pass').value;
+            
+            const res = await fetch(`/${key}/settings`, {
+                method: 'POST', body: JSON.stringify({mode, key_password: password})
+            });
+            if(res.ok) {
+                document.getElementById('settings-modal').classList.add('hidden');
+                showToast('Settings Updated');
+                setTimeout(()=>location.reload(), 800);
+            }
+        }
+
+        function uploadFile() {
+            const file = document.getElementById('fileInput').files[0];
+            if(!file) return;
+            const fd = new FormData();
+            fd.append('file', file);
+            document.getElementById('progress-container').classList.remove('hidden');
+            
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `/${key}/upload`, true);
+            xhr.upload.onprogress = (e) => {
+                if(e.lengthComputable) document.getElementById('progress-bar').style.width = (e.loaded/e.total*100)+'%';
+            }
+            xhr.onload = () => {
+                if(xhr.status === 200) location.reload();
+                else {
+                    alert('Upload failed');
+                    document.getElementById('progress-container').classList.add('hidden');
+                }
+            }
+            xhr.send(fd);
+        }
+
+        async function deleteFile(name) {
+            if(!confirm('Permanently delete this file?')) return;
+            await fetch(`/${key}/delete`, {method:'POST', body:JSON.stringify({filename:name})});
+            location.reload();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            t.classList.remove('opacity-0', 'translate-y-[-1rem]');
+            setTimeout(()=>t.classList.add('opacity-0', 'translate-y-[-1rem]'), 2000);
+        }
+    </script>
+</body>
+</html>

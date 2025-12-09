@@ -1,0 +1,13 @@
+services:
+  netcut:
+    build: .
+    container_name: netcut
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - AUTH_USER=admin #在此设置账号
+      - AUTH_PASS=secret123 #在此设置密码
+    volumes:
+      - ./data:/app/data
+      - ./templates:/app/templates
