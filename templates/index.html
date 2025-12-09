@@ -62,8 +62,10 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        .dark ::-webkit-scrollbar-thumb { background: #475569; }
-        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        @media (prefers-color-scheme: dark){
+            ::-webkit-scrollbar-thumb { background: #475569; }
+            ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        }
 
         /* 字体设置 */
         textarea, .markdown-body, pre, code {
@@ -75,16 +77,18 @@
         .prose { max-width: none; line-height: 1.75; }
         .prose h1 { font-size: 2em; font-weight: 800; margin-top: 1em; margin-bottom: 0.5em; }
         .prose h2 { font-size: 1.5em; font-weight: 700; margin-top: 1em; margin-bottom: 0.5em; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3em; }
-        .dark .prose h2 { border-color: #334155; }
         .prose ul { list-style-type: disc; padding-left: 1.5em; margin: 1em 0; }
         .prose ol { list-style-type: decimal; padding-left: 1.5em; margin: 1em 0; }
         .prose blockquote { border-left: 4px solid #cbd5e1; padding-left: 1rem; font-style: italic; color: #64748b; }
-        .dark .prose blockquote { border-color: #475569; color: #94a3b8; }
         .prose img { max-width: 100%; border-radius: 0.5rem; }
         .prose a { color: #4f46e5; text-decoration: underline; text-underline-offset: 2px; }
-        .dark .prose a { color: #818cf8; }
         .prose pre { padding: 1rem; overflow-x: auto; border-radius: 0.5rem; background: #f1f5f9; color: #1e293b; }
-        .dark .prose pre { background: #0f172a; color: #e2e8f0; border: 1px solid #1e293b; }
+        @media (prefers-color-scheme: dark){
+            .prose h2 { border-color: #334155; }
+            .prose blockquote { border-color: #475569; color: #94a3b8; }
+            .prose a { color: #818cf8; }
+            .prose pre { background: #0f172a; color: #e2e8f0; border: 1px solid #1e293b; }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-200 h-screen flex flex-col overflow-hidden transition-colors duration-200">
@@ -139,7 +143,7 @@
     <!-- 主布局 -->
     <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         <!-- 左侧：编辑器 -->
-        <section class="flex-1 relative flex flex-col min-h-0 bg-white dark:bg-transparent group">
+        <section class="flex-1 relative flex min-h-0 bg-white dark:bg-transparent group">
             <!-- 文本区域：深色模式下颜色更白，placeholder更灰 -->
             <textarea id="editor" 
                 class="w-full h-full p-4 md:p-6 bg-transparent resize-none focus:outline-none text-sm md:text-base leading-relaxed text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600"
@@ -148,7 +152,7 @@
                 {{if not .CanWrite}}readonly{{end}}>{{.Content}}</textarea>
             
             <!-- 预览区域：prose 样式 -->
-            <div id="preview" class="hidden w-full h-full p-4 md:p-6 overflow-y-auto prose dark:prose-invert"></div>
+            <div id="preview" class="hidden w-0 flex-grow h-full break-all p-4 md:p-6 overflow-y-auto prose dark:prose-invert"></div>
 
             <!-- Admin 登录快捷入口 -->
             {{if not .IsAdmin}}
@@ -315,6 +319,7 @@
                 btnView.classList.add('text-slate-500', 'hover:text-slate-700', 'dark:text-slate-400', 'dark:hover:text-slate-200');
             }
         }
+        toggleView("preview");
 
         // Logic (Same as before)
         let saveTimer;
